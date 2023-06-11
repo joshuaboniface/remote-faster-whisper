@@ -30,7 +30,7 @@ The response will look something like:
 {'language': 'en', 'language_probability': 0.9578803181648254, 'runtime': 1.281282663345337, 'sample_duration': 1.7763125, 'text': 'Hello world'}
 ```
 
-Remote Faster Whisper is currently very sparse. It is not a real Python module or package, it runs as a Flask development server, and it uses the `faster_whisper` library directory (rather than a wrapper such as `SpeechRecognition`). These deficiencies may change in the future; contributions welcome.
+Remote Faster Whisper is currently very sparse. It is not a real Python module or package, it runs as a Flask development server, and it uses the `faster_whisper` library directly (rather than a wrapper such as `SpeechRecognition`). These deficiencies may change in the future; contributions welcome.
 
 ## Configuration Options
 
@@ -52,7 +52,7 @@ The base URL for the API. This defaults to `/api/v0` but this can be changed to 
 
 The directory to cache Faster Whisper models. We recommend a RAM disk (`tmpfs`) for this to improve performance, though any path can be used.
 
-Remote Faster Whisper will attempt to download the `model` below at startup if this path is not found; this may take some time with slow network connections. This is done at startup, rather than during the first transcription to improve the user experience.
+Remote Faster Whisper will attempt to download the `model` below at startup if this path is not found; this may take some time with slow network connections. This is done at startup, rather than during the first transcription to improve the user experience. If the directory exists but the model is missing, it will be downloaded when the first transcription occurrs.
 
 **Note**: When using a service install with a dynamic user (the default if no user is specified), this option **must** be set to a temporary directory (under `/tmp` or `/var/tmp`), and note that the model will be cached to an ephemeral directory valid only for the time the service is active. Thus the model will be redownloaded each time the daemon starts. To avoid this, use a real user for the daemon, or use a pre-configured cache containing the model you wish to use outside of these temporary paths.
 
