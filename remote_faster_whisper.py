@@ -50,7 +50,7 @@ class FasterWhisperApi:
 
         self.faster_whisper_config = faster_whisper_config
 
-        @self.blueprint.route("/transcribe", methods=["GET", "POST"])
+        @self.blueprint.route("/transcribe", methods=["POST"])
         def transcribe():
             f = request.files["file"]
             rec = Recognizer()
