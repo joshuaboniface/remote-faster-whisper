@@ -8,7 +8,9 @@
 
 Remote Faster Whisper is a basic API designed to perform transcriptions of audio data with [Faster Whisper](https://github.com/guillaumekln/faster-whisper) over the network.
 
-Our reference example consumer is [Kalliope](https://github.com/kalliope-project/kalliope), a Python virtual assistant tool. Normally, Kalliope would run on a low-power, low-cost device such as a Raspberry Pi. While Faster Whisper can run on such a device, it can take a prohibitively long time to process the speech into text, especially on older or non-overclocked devices or when requiring better than `tiny` accuracy. Remote Faster Whisper exists to offload this processing onto a much faster machine, ideally one with a CUDA-supporting GPU, to more quickly transcribe the audio and return it in a reasonable time. This can also enable a small collection of such devices to use a single central transcription server to avoid using a lot of power individually. An example STT plugin for Kalliope is provided in [the Kalliope folder](/kalliope).
+Our reference consumer is [Kalliope](https://github.com/kalliope-project/kalliope), a Python virtual assistant tool. Normally, Kalliope would run on a low-power, low-cost device such as a Raspberry Pi. While Faster Whisper can run on such a device, it can take a prohibitively long time to process the speech into text, especially on older or non-overclocked devices or when requiring better than `tiny` accuracy. Remote Faster Whisper exists to offload this processing onto a much faster machine, ideally one with a CUDA-supporting GPU, to more quickly transcribe the audio and return it in a reasonable time. This can also enable a small collection of such devices to use a single central transcription server to avoid using a lot of power individually, while still keeping the STT self-hosted on-network. An example STT plugin for Kalliope is provided in [the Kalliope folder](/kalliope).
+
+## Installation & Usage
 
 To install Remote Faster Whisper, clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./setup.sh`). You will be prompted for several configuration details, including the path to install it to, whether to install a service unit for it or not, and what user to run it as (for service deploys only). It will then install Remote Faster Whisper inside a virtualenv in the specified path, (if chosen) install the systemd unit file into `/etc/systemd/system`, and then finally prompt you to edit the configuration file and start/enable the service.
 
@@ -27,7 +29,7 @@ print(resp.json())
 The response will look something like:
 
 ```
-{'language': 'en', 'language_probability': 0.9578803181648254, 'runtime': 1.281282663345337, 'sample_duration': 1.7763125, 'text': 'Hello world'}
+{'language': 'en', 'language_probability': 0.9578803181648254, 'runtime': 0.30777573585510254, 'sample_duration': 1.7763125, 'text': 'Hello world'}
 ```
 
 Remote Faster Whisper is currently very sparse. It is not a real Python module or package, it runs as a Flask development server, and it uses the `faster_whisper` library directly (rather than a wrapper such as `SpeechRecognition`). These deficiencies may change in the future; contributions welcome.

@@ -7,7 +7,7 @@
 #   * F405 (possibly undefined name): We use a wildcard for helpers
 ignore = W503, E501, F403, F405
 extend-ignore = E203
-# We exclude the Debian, migrations, and provisioner examples
+# We exclude the Debian (for future use) and Kalliope STT example folders
 exclude = debian,kalliope
 # Set the max line length to 88 for Black
 max-line-length = 88
