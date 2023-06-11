@@ -12,7 +12,7 @@ Our reference consumer is [Kalliope](https://github.com/kalliope-project/kalliop
 
 ## Installation & Usage
 
-To install Remote Faster Whisper, clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./setup.sh`). You will be prompted for several configuration details, including the path to install it to, whether to install a service unit for it or not, and what user to run it as (for service deploys only). It will then install Remote Faster Whisper inside a virtualenv in the specified path, (if chosen) install the systemd unit file into `/etc/systemd/system`, and then finally prompt you to edit the configuration file and start/enable the service.
+To install Remote Faster Whisper, clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./setup.sh`). You will be prompted for several configuration details, including the path to install it to, whether to install a service unit for it or not, and what user to run it as (for service deploys only). It will then install Remote Faster Whisper and the dependencies from `requirements.txt` inside a virtualenv in the specified path, (if chosen) install the systemd unit file into `/etc/systemd/system`, and then finally prompt you to edit the configuration file and start/enable the service. You can also perform these steps manually if you so choose.
 
 Once running, you can HTTP `POST` binary audio file data to the `/api/v0/transcribe` endpoint, and receive a JSON response of the transcription text and details. A simple test client is provided as `send.py` to validate a running instance with a local `wav` file.
 
