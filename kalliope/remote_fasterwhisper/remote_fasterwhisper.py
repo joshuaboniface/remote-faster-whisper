@@ -5,7 +5,6 @@ from kalliope.core import Utils
 from kalliope.stt.Utils import SpeechRecognition
 
 from requests import post
-from os import remove
 
 
 class Remote_fasterwhisper(SpeechRecognition):
