@@ -1,0 +1,7 @@
+pyyaml
+torch
+SpeechRecognition
+soundfile
+faster_whisper
+flask
+configargparse

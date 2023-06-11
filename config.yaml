@@ -1,0 +1,15 @@
+---
+daemon:
+  listen: 0.0.0.0
+  port: 9876
+  base_url: "/api/v0"
+
+faster_whisper:
+  model_cache_dir: /tmp/whisper-cache
+  model: small
+  device: cuda
+  device_id: 1
+  compute_type: int8
+  beam_size: 5
+  translate: yes
+  language: 
