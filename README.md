@@ -58,9 +58,9 @@ The model to use for transcribing. Can be [any valid model that Faster Whisper s
 
 The device to use for transcription processing. Can be one of `auto`, `cpu`, or `cuda`. Note that CUDA requires [nVidia libraries to operate correctly](https://github.com/guillaumekln/faster-whisper#gpu-support); these should be installed by `torch` on supported systems by default.
 
-#### `faster_whisper` -> `device_id`
+#### `faster_whisper` -> `device_index`
 
-The device ID to use. Mostly relevant for `cuda` device support, to specify the GPU to use.
+The device index to use. Mostly relevant for `cuda` device support, to specify the GPU to use.
 
 #### `faster_whisper` -> `compute_type`
 
