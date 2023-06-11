@@ -32,9 +32,11 @@ class Remote_fasterwhisper(SpeechRecognition):
         called from the background thread
         """
         try:
-            files = {'file': audio.get_wav_data()}
+            files = {'audio_file': audio.get_wav_data()}
             resp = post(self.uri, files=files)
             json = resp.json()
+            if resp.status_code != 200:
+                raise ValueError(f"API returned status code {resp.status_code}: {json.get('message')}")
 
             # Here we manually lowercase the response and remove common punctuation to make parsing by
             # Kalliope neurons more sensible.

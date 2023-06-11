@@ -14,25 +14,17 @@ Our reference consumer is [Kalliope](https://github.com/kalliope-project/kalliop
 
 To install Remote Faster Whisper, clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./setup.sh`). You will be prompted for several configuration details, including the path to install it to, whether to install a service unit for it or not, and what user to run it as (for service deploys only). It will then install Remote Faster Whisper inside a virtualenv in the specified path, (if chosen) install the systemd unit file into `/etc/systemd/system`, and then finally prompt you to edit the configuration file and start/enable the service.
 
-Once running, you can HTTP `POST` binary audio file data (as `files` only!) to the `/api/v0/transcribe` endpoint, and receive a JSON response of the transcription text and details. For example using the `requests` library:
+Once running, you can HTTP `POST` binary audio file data to the `/api/v0/transcribe` endpoint, and receive a JSON response of the transcription text and details. A simple test client is provided as `send.py` to validate a running instance with a local `wav` file.
 
-```
-import requests
+**Note**: You **must** `POST` the audio data as `files` with the name `audio_file` as shown in the [test client](/send.py#L28) or the [Kalliope STT example](/kalliope/remote_fasterwhisper/remote_fasterwhisper.py#L35).
 
-filename = "hello_world.wav"
-
-files = {'file': open(filename, 'rb')}
-resp = requests.post("http://localhost:9876/api/v0/transcribe", files=files)
-print(resp.json())
-```
-
-The response will look something like:
+The JSON response will look something like:
 
 ```
 {'language': 'en', 'language_probability': 0.9578803181648254, 'runtime': 0.30777573585510254, 'sample_duration': 1.7763125, 'text': 'Hello world'}
 ```
 
-Remote Faster Whisper is currently very sparse. It is not a real Python module or package, it runs as a Flask development server, and it uses the `faster_whisper` library directly (rather than a wrapper such as `SpeechRecognition`). These deficiencies may change in the future; contributions welcome.
+Remote Faster Whisper is currently very sparse. It is not a real Python module or package, it runs as a Flask development server, and it uses the `faster_whisper` library directly (rather than a wrapper such as `SpeechRecognition`, though it does leverage some of that library's helper functions). These deficiencies may change in the future, and contributions are welcome.
 
 ## Configuration Options
 

@@ -63,12 +63,25 @@ class FasterWhisperApi:
 
         @self.blueprint.route("/transcribe", methods=["POST"])
         def transcribe():
-            f = request.files["file"]
-            rec = Recognizer()
-            with AudioFile(f) as source:
-                audio = rec.record(source)
+            try:
+                f = request.files["audio_file"]
+            except Exception:
+                return {
+                    "message": "Request data did not contain an 'audio_file' in its files"
+                }, 400
 
-            assert isinstance(audio, AudioData), "Data must be audio data"
+            try:
+                rec = Recognizer()
+                with AudioFile(f) as source:
+                    audio = rec.record(source)
+
+                assert isinstance(audio, AudioData)
+                audio.get_wav_data(convert_rate=16000)
+            except Exception:
+                return {
+                    "message": "The 'audio_file' must contain valid WAV audio data"
+                }, 400
+
             return self.perform_faster_whisper_recognition(audio)
 
         self.app.register_blueprint(self.blueprint)
