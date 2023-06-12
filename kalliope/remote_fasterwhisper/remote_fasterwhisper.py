@@ -47,6 +47,7 @@ class Remote_fasterwhisper(SpeechRecognition):
             text = text.replace('.', '')
             text = text.replace('!', '')
             text = text.replace('?', '')
+            text = text.replace("'", "")
 
             captured_audio = text
             language = json.get("language")

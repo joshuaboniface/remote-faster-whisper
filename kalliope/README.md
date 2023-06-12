@@ -8,3 +8,5 @@ speech_to_text:
   - remote_fasterwhisper:                                  
       uri: http://<myhost>:9876/api/v0/transcribe 
 ```
+
+Note that this example lowercases all response text, and strips various punctuation (specifically, the set of `,.!?'`). Ensure your orders take this into account.
