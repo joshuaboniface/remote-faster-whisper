@@ -5,6 +5,9 @@ daemon:
   base_url: "/api/v0"
 
 faster_whisper:
+  debug:
+    save_audio: no
+    save_path: /tmp/rfw
   model_cache_dir: /tmp/whisper-cache
   model: small
   device: cuda

@@ -24,6 +24,8 @@ from flask import Flask, Blueprint, request
 from speech_recognition.audio import AudioData
 from faster_whisper import WhisperModel
 from io import BytesIO
+from os.path import exists
+from os import makedirs
 from time import time
 from yaml import safe_load
 from speech_recognition import Recognizer, AudioFile
@@ -61,6 +63,14 @@ class FasterWhisperApi:
         if not self.language:
             self.language = None
 
+        self.save_audio = faster_whisper_config.get("debug", {}).get("save_audio")
+        if self.save_audio:
+            self.save_path = faster_whisper_config.get("debug", {}).get("save_path")
+
+        if self.save_audio:
+            if not exists(self.save_path):
+                makedirs(self.save_path)
+
         @self.blueprint.route("/transcribe", methods=["POST"])
         def transcribe():
             try:
@@ -76,7 +86,13 @@ class FasterWhisperApi:
                     audio = rec.record(source)
 
                 assert isinstance(audio, AudioData)
-                audio.get_wav_data(convert_rate=16000)
+                data = audio.get_wav_data(convert_rate=16000)
+                if self.save_audio:
+                    runtime = time()
+                    makedirs(f"{self.save_path}/{runtime}")
+                    with open(f"{self.save_path}/{runtime}/audio.wav", "wb") as fh:
+                        fh.write(data)
+
             except Exception:
                 return {
                     "message": "The 'audio_file' must contain valid WAV audio data"
