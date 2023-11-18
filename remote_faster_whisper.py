@@ -116,7 +116,7 @@ class FasterWhisperApi:
         )
 
         print("Starting API")
-        self.app.run(debug=True, host=self.listen, port=self.port)
+        self.app.run(debug=False, host=self.listen, port=self.port)
 
     def perform_faster_whisper_recognition(self, audio_data):
         """
