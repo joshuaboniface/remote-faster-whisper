@@ -18,5 +18,3 @@ faster_whisper:
   language: 
 
 transformations:
-  - ["bunny", "rabbit"]
-  - ["nice", "fancy"]

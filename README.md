@@ -103,4 +103,13 @@ As a more concrete example, you may say the phrase "lights on", but in your voic
 
 This will ensure that the consumer gets something it expects even if the Whisper models don't quite understand you.
 
-You should use this sparingly: a large number of transformations might slow down your transcription time considerably, and you must be mindful of the implications each transformation will have on all possible texts that are parsed. They work best with only a few common mishearings and when using relatively short text strings, for example in a voice command system.
+You could also generalize this a bit more and leverage the whitespace to your advantage:
+
+   ```yaml
+   transformations:
+     - [" is on", "s on"]
+   ```
+
+This would replace both "light is on" with "lights on" as well as "speaker is on" with "speakers on", if both are common mishearings.
+
+**Note:** You should use this feature sparingly. A large number of transformations might slow down your transcription time considerably, and you must be mindful of the implications each transformation will have on all possible texts that are parsed. They work best with only a few common mishearings and when using relatively short text strings, for example in a voice command system.
