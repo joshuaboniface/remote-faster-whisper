@@ -40,6 +40,7 @@ class FasterWhisperApi:
         port=9876,
         base_url="/api/v0",
         faster_whisper_config={},
+        transformations={},
     ):
         """
         Initialize the API and Faster Whisper configuration
@@ -49,6 +50,8 @@ class FasterWhisperApi:
 
         self.listen = listen
         self.port = port
+
+        self.transformations = transformations
 
         self.model_cache_dir = faster_whisper_config.get(
             "model_cache_dir", "/tmp/whisper-cache"
@@ -142,6 +145,10 @@ class FasterWhisperApi:
             found_text.append(segment.text)
         text = " ".join(found_text).strip()
 
+        # Perform transformations on text
+        for tr in [tr for tr in self.transformations if tr[0] in text]:
+            text = text.replace(tr[0], tr[1])
+
         t_end = time()
         t_run = t_end - t_start
 
@@ -190,7 +197,9 @@ def start_api():
     options = parse_args()
     config = parse_config(options.config)
     api = FasterWhisperApi(
-        **config["daemon"], faster_whisper_config=config["faster_whisper"]
+        **config["daemon"],
+        faster_whisper_config=config["faster_whisper"],
+        transformations=config["transformations"],
     )
     api.start()
 

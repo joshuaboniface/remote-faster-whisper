@@ -16,3 +16,7 @@ faster_whisper:
   beam_size: 5
   translate: yes
   language: 
+
+transformations:
+  - ["bunny", "rabbit"]
+  - ["nice", "fancy"]

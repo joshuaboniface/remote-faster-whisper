@@ -28,7 +28,7 @@ Remote Faster Whisper is currently very sparse. It is not a real Python module o
 
 ## Configuration Options
 
-The configuration file `config.yaml` is divided into two main sections: `daemon:` controls the Flask API daemon itself, and `faster_whisper:` controls the Faster Whisper transcription library. The following options can be adjusted:
+The configuration file `config.yaml` is divided into three main sections: `daemon:` controls the Flask API daemon itself; `faster_whisper:` controls the Faster Whisper transcription library; and `transformations:` which define transfomrations to make on the output text.
 
 #### `daemon` -> `listen`
 
@@ -77,3 +77,30 @@ Whether or not to attempt translation on the incoming data to `language` (below)
 #### `faster_whisper` -> `language`
 
 The language to use, as a lowercase ISO language code (e.g. `en`, `fr`, `zh`, etc.). Leave empty (or remove) for automatic language selection.
+
+#### `transformations`
+
+This section is a list of tuple-lists, e.g.
+
+   ```yaml
+   transformations:
+     - ["bunny", "rabbit"]
+     - ["cute", "fancy"]
+   ```
+
+After transcribing text with Faster Whisper, the text is run through these transformations in order, replacing the first substring with the second substring if it is found in the text.
+
+For example, with the above transformations, speaking "the cute bunny" will actually return "the fancy rabbit".
+
+This is a contrived example; the real reason to use transformations is to "fix up" common mishearings or misunderstandings in your environment.
+
+As a more concrete example, you may say the phrase "lights on", but in your voice this is parsed as "light is on" or "light's on". **As long as** you don't expect "is on" to mean anything to your consumer, you could use a transformation here to force the "right" text, like:
+
+   ```yaml
+   transformations:
+     - ["light is on", "lights on"]
+   ```
+
+This will ensure that the consumer gets something it expects even if the Whisper models don't quite understand you.
+
+You should use this sparingly: a large number of transformations might slow down your transcription time considerably, and you must be mindful of the implications each transformation will have on all possible texts that are parsed. They work best with only a few common mishearings and when using relatively short text strings, for example in a voice command system.
