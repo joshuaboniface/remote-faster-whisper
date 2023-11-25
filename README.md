@@ -80,17 +80,17 @@ The language to use, as a lowercase ISO language code (e.g. `en`, `fr`, `zh`, et
 
 #### `transformations`
 
-This section is a list of tuple-lists, e.g.
+This section is a list of tuple-lists, where the first element is a `re.sub` matching regex, and the second element is the replacement; e.g.
 
    ```yaml
    transformations:
-     - ["bunny", "rabbit"]
-     - ["cute", "fancy"]
+     - ["(bunny|hare)", "rabbit"]
+     - ["[Cc]ute", "fancy"]
    ```
 
-After transcribing text with Faster Whisper, the text is run through these transformations in order, replacing the first substring with the second substring if it is found in the text.
+After transcribing text with Faster Whisper, the text is run through these transformations in order, replacing the regex, if found in the text, with the corresponding string. Transformations build on each other, so a later transformation can alter the result of an earlier one.
 
-For example, with the above transformations, speaking "the cute bunny" will actually return "the fancy rabbit".
+For example, with the above transformations, speaking either "the cute bunny" or "The Cute hare" will actually return "the fancy rabbit".
 
 This is a contrived example; the real reason to use transformations is to "fix up" common mishearings or misunderstandings in your environment.
 
@@ -112,4 +112,30 @@ You could also generalize this a bit more and leverage the whitespace to your ad
 
 This would replace both "light is on" with "lights on" as well as "speaker is on" with "speakers on", if both are common mishearings.
 
+There are also 4 special transformations that can be used. These should be entered as simple list entries rather than a tuple-list.
+
+* `lower` will convert the entire string to lowercase with `str.lower()`.
+
+* `casefold` will convert the entire string to full lowercase with `str.casefold()`.
+
+* `upper` will convert the entire string to uppercase with `str.upper()`.
+
+* `title` will convert the entire string to titlecase with `str.title()`.
+
+**Note:** These special transformations are always applied **first**, before any other transformations, in the order given above. Using multiple special transformations is likely not very useful, but be mindful of this if you do.
+
+Thus a full transformations example might look like:
+
+   ```yaml
+   transformations:
+     - lower
+     - ["[.,!?]", ""]
+     - [" is on", "s on"]
+     - ["(keeter|peter)", "heater"]
+   ```
+
+This will ensure a fully-lowercase result, with no (common) punctuation, " is on" replaced by "s on", and "keeter" replaced with "heater"; hence speaking something that is transcribed as "Keeter is on." will return "heaters on".
+
 **Note:** You should use this feature sparingly. A large number of transformations might slow down your transcription time considerably, and you must be mindful of the implications each transformation will have on all possible texts that are parsed. They work best with only a few common mishearings and when using relatively short text strings, for example in a voice command system.
+
+**Note:** Regexes in the first field are normal strings, i.e. they are not treated as raw strings. Be mindful of complex regexes.

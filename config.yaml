@@ -18,3 +18,10 @@ faster_whisper:
   language: 
 
 transformations:
+# Examples:
+# lowercase the string
+# - lower
+# replace punctuation
+# - ["[.,!?]", ""]
+# substitute "trash was/with" with "joshua's"
+# - ["trash (was|with)", "joshua's"]

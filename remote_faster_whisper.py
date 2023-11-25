@@ -31,6 +31,7 @@ from yaml import safe_load
 from speech_recognition import Recognizer, AudioFile
 from numpy import float32
 from soundfile import read as sf_read
+from re import sub, search
 
 
 class FasterWhisperApi:
@@ -146,8 +147,18 @@ class FasterWhisperApi:
         text = " ".join(found_text).strip()
 
         # Perform transformations on text
-        for tr in [tr for tr in self.transformations if tr[0] in text]:
-            text = text.replace(tr[0], tr[1])
+        if 'lower' in self.transformations:
+            text = text.lower()
+        if 'casefold' in self.transformations:
+            text = text.casefold()
+        if 'upper' in self.transformations:
+            text = text.upper()
+        if 'title' in self.transformations:
+            text = text.title()
+        for tr in [tr for tr in self.transformations if isinstance(tr, list) and search(tr[0], text)]:
+            _text = text
+            text = sub(tr[0], tr[1], text)
+            print(f'Transforming "{tr[0]}" -> "{tr[1]}": pre: "{_text}", post: "{text}"')
 
         t_end = time()
         t_run = t_end - t_start
