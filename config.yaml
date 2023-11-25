@@ -21,7 +21,7 @@ transformations:
 # Examples:
 # lowercase the string
 # - lower
-# replace punctuation
-# - ["[.,!?]", ""]
+# replace punctuation; note the double-bashslash for a literal '.'
+# - ["[\\.,!?]", ""]
 # substitute "trash was/with" with "joshua's"
 # - ["trash (was|with)", "joshua's"]

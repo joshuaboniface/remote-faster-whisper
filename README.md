@@ -129,7 +129,7 @@ Thus a full transformations example might look like:
    ```yaml
    transformations:
      - lower
-     - ["[.,!?]", ""]
+     - ["[\\.,!?]", ""]  # Note the double-backslash for a literal '.'
      - [" is on", "s on"]
      - ["(keeter|peter)", "heater"]
    ```
