@@ -28,7 +28,7 @@ Remote Faster Whisper is currently very sparse. It is not a real Python module o
 
 ## Configuration Options
 
-The configuration file `config.yaml` is divided into three main sections: `daemon:` controls the Flask API daemon itself; `faster_whisper:` controls the Faster Whisper transcription library; and `transformations:` which define transfomrations to make on the output text.
+The configuration file `config.yaml` is divided into three main sections: `daemon:` controls the Flask API daemon itself; `faster_whisper:` controls the Faster Whisper transcription library; and `transformations:` which define transformations to make on the output text.
 
 #### `daemon` -> `listen`
 
@@ -46,9 +46,9 @@ The base URL for the API. This defaults to `/api/v0` but this can be changed to 
 
 The directory to cache Faster Whisper models. We recommend a RAM disk (`tmpfs`) for this to improve performance, though any path can be used.
 
-Remote Faster Whisper will attempt to download the `model` below at startup if this path is not found; this may take some time with slow network connections. This is done at startup, rather than during the first transcription to improve the user experience. If the directory exists but the model is missing, it will be downloaded when the first transcription occurrs.
+Remote Faster Whisper will attempt to download the `model` below at startup if this path is not found; this may take some time with slow network connections. This is done at startup, rather than during the first transcription to improve the user experience. If the directory exists but the model is missing, it will be downloaded when the first transcription occurs.
 
-**Note**: When using a service install with a dynamic user (the default if no user is specified), this option **must** be set to a temporary directory (under `/tmp` or `/var/tmp`), and note that the model will be cached to an ephemeral directory valid only for the time the service is active. Thus the model will be redownloaded each time the daemon starts. To avoid this, use a real user for the daemon, or use a pre-configured cache containing the model you wish to use outside of these temporary paths.
+**Note**: When using a service install with a dynamic user (the default if no user is specified), this option **must** be set to a temporary directory (under `/tmp` or `/var/tmp`), and note that the model will be cached to an ephemeral directory valid only for the time the service is active. Thus the model will be re-downloaded each time the daemon starts. To avoid this, use a real user for the daemon, or use a pre-configured cache containing the model you wish to use outside of these temporary paths.
 
 #### `faster_whisper` -> `model`
 
@@ -120,7 +120,7 @@ There are also 4 special transformations that can be used. These should be enter
 
 * `upper` will convert the entire string to uppercase with `str.upper()`.
 
-* `title` will convert the entire string to titlecase with `str.title()`.
+* `title` will convert the entire string to title-case with `str.title()`.
 
 **Note:** These special transformations are always applied **first**, before any other transformations, in the order given above. Using multiple special transformations is likely not very useful, but be mindful of this if you do.
 
