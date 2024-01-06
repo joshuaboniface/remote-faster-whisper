@@ -155,10 +155,13 @@ class FasterWhisperApi:
             text = text.upper()
         if 'title' in self.transformations:
             text = text.title()
-        for tr in [tr for tr in self.transformations if isinstance(tr, list) and search(tr[0], text)]:
-            _text = text
-            text = sub(tr[0], tr[1], text)
-            print(f'Transforming "{tr[0]}" -> "{tr[1]}": pre: "{_text}", post: "{text}"')
+        for tr in self.transformations:
+            if not isinstance(tr, list):
+                continue
+            if search(tr[0], text):
+                _text = text
+                text = sub(tr[0], tr[1], text)
+                print(f'Transforming "{tr[0]}" -> "{tr[1]}": pre "{_text}", post "{text}"')
 
         t_end = time()
         t_run = t_end - t_start
