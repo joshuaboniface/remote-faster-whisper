@@ -8,7 +8,11 @@
 
 Remote Faster Whisper is a basic API designed to perform transcriptions of audio data with [Faster Whisper](https://github.com/guillaumekln/faster-whisper) over the network.
 
-Our reference consumer is [Kalliope](https://github.com/kalliope-project/kalliope), a Python virtual assistant tool. Normally, Kalliope would run on a low-power, low-cost device such as a Raspberry Pi. While Faster Whisper can run on such a device, it can take a prohibitively long time to process the speech into text, especially on older or non-overclocked devices or when requiring better than `tiny` accuracy. Remote Faster Whisper exists to offload this processing onto a much faster machine, ideally one with a CUDA-supporting GPU, to more quickly transcribe the audio and return it in a reasonable time. This can also enable a small collection of such devices to use a single central transcription server to avoid using a lot of power individually, while still keeping the STT self-hosted on-network. An example STT plugin for Kalliope is provided in [the Kalliope folder](/kalliope).
+We have two main reference consumers: [Kalliope](https://github.com/kalliope-project/kalliope) and [HomeAssistant](https://github.com/home-assistant]) via my [Custom RFW Integration](https://github.com/joshuaboniface/HASS-RemoteFasterWhisper).
+
+Normally, Kalliope would run on a low-power, low-cost device such as a Raspberry Pi. While Faster Whisper can run on such a device, it can take a prohibitively long time to process the speech into text, especially on older or non-overclocked devices or when requiring better than `tiny` accuracy. Remote Faster Whisper exists to offload this processing onto a much faster machine, ideally one with a CUDA-supporting GPU, to more quickly transcribe the audio and return it in a reasonable time. This can also enable a small collection of such devices to use a single central transcription server to avoid using a lot of power individually, while still keeping the STT self-hosted on-network. An example STT plugin for Kalliope is provided in [the Kalliope folder](/kalliope).
+
+For HomeAssistant, RFW provides some additional functionality that the integrated Whisper component lacks, for instance off-machine GPU offloading, custom substitutions, and the ability to add it multiple times with unique prefixes. See the aforementioned integration for more details.
 
 ## Installation & Usage
 
