@@ -213,7 +213,7 @@ def start_api():
     api = FasterWhisperApi(
         **config["daemon"],
         faster_whisper_config=config["faster_whisper"],
-        transformations=config["transformations"],
+        transformations=config.get("transformations", {}),
     )
     api.start()
 
