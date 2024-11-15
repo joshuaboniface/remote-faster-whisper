@@ -44,7 +44,7 @@ ${dest_path}/bin/pip install --requirement requirements.txt
 cp remote_faster_whisper.py ${dest_path}/bin/remote_faster_whisper
 cp config.yaml ${dest_path}/config.yaml
 
-lib_path="$( dirname $( find ${dest_path}/lib -type f -name "libcudnn_ops_infer.so*" | head -1 ) )"
+lib_path="$( dirname $( find ${dest_path}/lib -type f -name "libcudnn_ops*" | head -1 ) )"
 
 if [[ ${service} == "true" ]]; then
     cat <<EOF >/etc/systemd/system/remote-faster-whisper.service
