@@ -19,6 +19,7 @@
 #
 ###############################################################################
 
+import av
 from configargparse import ArgParser
 from flask import Flask, Blueprint, request
 from speech_recognition.audio import AudioData
@@ -28,11 +29,11 @@ from os.path import exists
 from os import makedirs
 from time import time
 from yaml import safe_load
-from speech_recognition import Recognizer, AudioFile
+from speech_recognition import Recognizer
 from numpy import float32
 from soundfile import read as sf_read
 from re import sub, search
-
+import numpy as np
 
 class FasterWhisperApi:
     def __init__(
@@ -85,24 +86,24 @@ class FasterWhisperApi:
                 }, 400
 
             try:
-                rec = Recognizer()
-                with AudioFile(f) as source:
-                    audio = rec.record(source)
-
-                assert isinstance(audio, AudioData)
-                data = audio.get_wav_data(convert_rate=16000)
+                audio_bytes, sample_rate = convert_audio_to_wav(f)
+                if audio_bytes is None:
+                    raise ValueError("Invalid audio format")
+                
+                audio_data = AudioData(audio_bytes, sample_rate, 2)
+                
                 if self.save_audio:
                     runtime = time()
-                    makedirs(f"{self.save_path}/{runtime}")
+                    makedirs(f"{self.save_path}/{runtime}", exist_ok=True)
                     with open(f"{self.save_path}/{runtime}/audio.wav", "wb") as fh:
-                        fh.write(data)
-
+                        fh.write(audio_bytes)
+            
             except Exception:
                 return {
-                    "message": "The 'audio_file' must contain valid WAV audio data"
+                     "message": "The 'audio_file' must contain a valid audio format"
                 }, 400
 
-            return self.perform_faster_whisper_recognition(audio)
+            return self.perform_faster_whisper_recognition(audio_data)
 
         self.app.register_blueprint(self.blueprint)
 
@@ -204,10 +205,29 @@ def parse_config(configfile):
     return config
 
 
+def convert_audio_to_wav(file):
+    """
+    Convert any audio format to WAV using PyAv
+    """
+    try:
+        container = av.open(file.stream)
+        audio_stream = next(s for s in container.streams if s.type == 'audio')
+        resampler = av.audio.resampler.AudioResampler(format='s16', layout='mono', rate=16000)
+        
+        audio_data = []
+        for frame in container.decode(audio_stream):
+            resampled_frames = resampler.resample(frame)
+            for resampled_frame in resampled_frames:
+                audio_data.append(resampled_frame.to_ndarray().flatten())
+        
+        audio_array = np.concatenate(audio_data) if audio_data else np.array([], dtype=np.int16)
+        return audio_array.tobytes(), 16000
+    except Exception as e:
+        print(f"Error decoding audio: {e}")
+        return None, None
+
+
 def start_api():
-    """
-    Parse arguments, grab configuration, and initialize and start the API
-    """
     options = parse_args()
     config = parse_config(options.config)
     api = FasterWhisperApi(
