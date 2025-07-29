@@ -1,0 +1,14 @@
+daemon:
+  listen: $LISTEN
+  port: $PORT
+  base_url: $BASE_URL
+
+faster_whisper:
+  model_cache_dir: /tmp/whisper-cache
+  model: $MODEL
+  device: $DEVICE
+  device_index: $DEVICE_INDEX
+  compute_type: $COMPUTE_TYPE
+  beam_size: $BEAM_SIZE
+  translate: $TRANSLATE
+  language: $LANGUAGE
