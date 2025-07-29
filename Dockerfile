@@ -1,7 +1,7 @@
 FROM nvidia/cuda:12.9.1-cudnn-runtime-ubuntu22.04
 
 RUN apt-get update && \
-    apt-get install -y python3 python3-pip && \
+    apt-get install -y python3 python3-pip gettext && \
     ln -sf /usr/bin/python3 /usr/bin/python && \
     rm -rf /var/lib/apt/lists/*
 
