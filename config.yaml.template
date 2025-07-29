@@ -1,0 +1,14 @@
+daemon:
+  listen: ${LISTEN:-0.0.0.0}
+  port: ${PORT:-9876}
+  base_url: "${BASE_URL:-/api/v0}"
+
+faster_whisper:
+  model_cache_dir: /tmp/whisper-cache
+  model: ${MODEL:-small}
+  device: ${DEVICE:-cuda}
+  device_index: ${DEVICE_INDEX:-0}
+  compute_type: ${COMPUTE_TYPE:-int8}
+  beam_size: ${BEAM_SIZE:-5}
+  translate: ${TRANSLATE:-yes}
+  language: ${LANGUAGE:-}
