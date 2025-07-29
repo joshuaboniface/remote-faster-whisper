@@ -1,4 +1,3 @@
-# CUDA/GPU Dockerfile (default)
 FROM nvidia/cuda:12.9.1-cudnn-runtime-ubuntu22.04
 
 RUN apt-get update && \
@@ -10,9 +9,14 @@ WORKDIR /app
 
 COPY . /app
 
+COPY entrypoint.sh /entrypoint.sh
+COPY config.yaml.template /app/config.yaml.template
+
+RUN chmod +x /entrypoint.sh
+
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 9876
 
-CMD ["python", "remote_faster_whisper.py", "-c", "config.yaml"]
+ENTRYPOINT ["/entrypoint.sh"]
