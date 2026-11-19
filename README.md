@@ -14,11 +14,9 @@ Normally, Kalliope would run on a low-power, low-cost device such as a Raspberry
 
 For HomeAssistant, RFW provides some additional functionality that the integrated Whisper component lacks, for instance off-machine GPU offloading, custom substitutions, and the ability to add it multiple times with unique prefixes. See the aforementioned integration for more details.
 
-## Installation & Usage
+## Installation
 
-To install Remote Faster Whisper, clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./setup.sh`). You will be prompted for several configuration details, including the path to install it to, whether to install the CUDA libraries for NVIDIA GPU support, whether to install a service unit for it or not, and what user to run it as (for service deploys only). It will then install Remote Faster Whisper and the dependencies from `requirements.txt` (and, if chosen, `requirements-cuda.txt`) inside a virtualenv in the specified path, (if chosen) install the systemd unit file into `/etc/systemd/system`, and then finally prompt you to edit the configuration file and start/enable the service. You can also perform these steps manually if you so choose.
-
-`setup.sh` can be re-run on an existing installation to update or rebuild it, for instance after updating this repository or upgrading the system Python. An existing `config.yaml` is always preserved, and an existing systemd unit file is backed up if it would be changed.
+You can run Remote Faster Whisper in two ways: via Docker, or via a direct installation with `setup.sh` and Systemd. For production use alongside e.g. Home Assistant, we recommend Docker.
 
 ### Docker
 
@@ -30,7 +28,13 @@ Alternatively, if no configuration file is mounted, a basic one (without `transf
 
 To build the image locally instead, run `docker build -t remote-faster-whisper .` in this repository.
 
-### Usage
+### Direct Installation
+
+Clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./setup.sh`). You will be prompted for several configuration details, including the path to install it to, whether to install the CUDA libraries for NVIDIA GPU support, whether to install a service unit for it or not, and what user to run it as (for service deploys only). It will then install Remote Faster Whisper and the dependencies from `requirements.txt` (and, if chosen, `requirements-cuda.txt`) inside a virtualenv in the specified path, (if chosen) install the systemd unit file into `/etc/systemd/system`, and then finally prompt you to edit the configuration file and start/enable the service. You can also perform these steps manually if you so choose.
+
+`setup.sh` can be re-run on an existing installation to update or rebuild it, for instance after updating this repository or upgrading the system Python. An existing `config.yaml` is always preserved, and an existing systemd unit file is backed up if it would be changed.
+
+## Usage
 
 Once running, you can HTTP `POST` binary WAV audio file data to the `/api/v0/transcribe` endpoint, and receive a JSON response of the transcription text and details. A simple test client is provided as `send.py` to validate a running instance with a local `wav` file.
 
