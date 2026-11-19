@@ -1,0 +1,24 @@
+services:
+  remote-faster-whisper:
+    image: ghcr.io/joshuaboniface/remote-faster-whisper:latest
+    container_name: remote-faster-whisper
+    restart: unless-stopped
+    # Optional: run as a specific user/group that owns the models directory
+    # user: "1000:1000"
+    ports:
+      - "9876:9876"
+    volumes:
+      # Your configuration; "daemon.listen" must be 0.0.0.0 and
+      # "faster_whisper.model_cache_dir" should be /models
+      - ./config.yaml:/config/config.yaml:ro
+      # Persistent model cache, to avoid re-downloading models on every start
+      - ./models:/models
+    # For NVIDIA GPU (CUDA) support; requires the NVIDIA Container Toolkit on the
+    # host. Remove this section for CPU-only operation (with "device: cpu").
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]

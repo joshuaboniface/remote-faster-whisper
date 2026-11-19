@@ -18,6 +18,18 @@ For HomeAssistant, RFW provides some additional functionality that the integrate
 
 To install Remote Faster Whisper, clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./setup.sh`). You will be prompted for several configuration details, including the path to install it to, whether to install a service unit for it or not, and what user to run it as (for service deploys only). It will then install Remote Faster Whisper and the dependencies from `requirements.txt` inside a virtualenv in the specified path, (if chosen) install the systemd unit file into `/etc/systemd/system`, and then finally prompt you to edit the configuration file and start/enable the service. You can also perform these steps manually if you so choose.
 
+### Docker
+
+A Docker image is published to the GitHub Container Registry as `ghcr.io/joshuaboniface/remote-faster-whisper`, built from the [`Dockerfile`](/Dockerfile) on every push to `master` (tagged `latest`) and on every `v*` release tag. It includes the CUDA 12 cuBLAS and cuDNN 9 libraries needed for GPU support, so only the NVIDIA driver and [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) are needed on the host.
+
+An example [`docker-compose.yaml`](/docker-compose.yaml) is provided. Copy it and `config.yaml` to a directory on the host, edit `config.yaml` (setting `daemon` -> `listen` to `0.0.0.0` and `faster_whisper` -> `model_cache_dir` to `/models`), and then run `docker compose up -d`. Models are cached to the `./models` directory, and the configuration is mounted at `/config/config.yaml` in the container. For CPU-only operation, remove the `deploy:` section from the compose file and set `device` to `cpu` or `auto`.
+
+Alternatively, if no configuration file is mounted, a basic one (without `transformations`) is generated from the following environment variables, shown with their defaults: `LISTEN` (`0.0.0.0`), `PORT` (`9876`), `BASE_URL` (`/api/v0`), `MODEL_CACHE_DIR` (`/models`), `MODEL` (`small`), `DEVICE` (`cuda`), `DEVICE_INDEX` (`0`), `COMPUTE_TYPE` (`int8`), `BEAM_SIZE` (`5`), `TRANSLATE` (`yes`), and `LANGUAGE` (empty, i.e. auto-detect).
+
+To build the image locally instead, run `docker build -t remote-faster-whisper .` in this repository.
+
+### Usage
+
 Once running, you can HTTP `POST` binary WAV audio file data to the `/api/v0/transcribe` endpoint, and receive a JSON response of the transcription text and details. A simple test client is provided as `send.py` to validate a running instance with a local `wav` file.
 
 **Note**: You **must** `POST` the audio data as `files` with the name `audio_file` as shown in the [test client](/send.py#L28) or the [Kalliope STT example](/kalliope/remote_fasterwhisper/remote_fasterwhisper.py#L35), and the data **must** be valid PCM WAV data (not FLAC, mp3, or any other formats).

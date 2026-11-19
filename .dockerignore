@@ -1,0 +1,5 @@
+*
+!requirements.txt
+!remote_faster_whisper.py
+!entrypoint.sh
+!config.yaml.template

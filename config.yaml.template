@@ -4,7 +4,7 @@ daemon:
   base_url: $BASE_URL
 
 faster_whisper:
-  model_cache_dir: /tmp/whisper-cache
+  model_cache_dir: $MODEL_CACHE_DIR
   model: $MODEL
   device: $DEVICE
   device_index: $DEVICE_INDEX
