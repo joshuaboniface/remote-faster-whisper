@@ -12,19 +12,10 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# Install the Python requirements, except torch: nothing imports it directly, and it
-# pulls in several GB of CUDA libraries that may not match what CTranslate2 needs.
-COPY requirements.txt .
-RUN grep -vxF torch requirements.txt > /tmp/requirements.txt \
-    && pip install -r /tmp/requirements.txt \
-    && rm /tmp/requirements.txt
-
-# CUDA 12 cuBLAS and cuDNN 9, as required by CTranslate2 4.x for GPU support; these
-# are dlopen()'d at runtime so must be on the library path. CPU-only use ignores them.
-# These versions are tested back to Pascal (compute capability 6.1) GPUs.
-ARG CUBLAS_VERSION=12.8.5.5
-ARG CUDNN_VERSION=9.28.1.4
-RUN pip install "nvidia-cublas-cu12==${CUBLAS_VERSION}" "nvidia-cudnn-cu12==${CUDNN_VERSION}"
+# Install the Python requirements, and the CUDA 12 libraries for GPU support
+# (ignored for CPU-only use); see requirements-cuda.txt
+COPY requirements.txt requirements-cuda.txt ./
+RUN pip install -r requirements.txt -r requirements-cuda.txt
 ENV LD_LIBRARY_PATH=/usr/local/lib/python3.13/site-packages/nvidia/cublas/lib:/usr/local/lib/python3.13/site-packages/nvidia/cudnn/lib
 
 COPY remote_faster_whisper.py config.yaml.template /app/

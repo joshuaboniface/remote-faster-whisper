@@ -1,0 +1,5 @@
+# CUDA 12 cuBLAS and cuDNN 9, as required by CTranslate2 4.x for NVIDIA GPU support.
+# These are dlopen()'d at runtime, so their lib directories must be in LD_LIBRARY_PATH.
+# These versions are tested back to Pascal (compute capability 6.1) GPUs.
+nvidia-cublas-cu12==12.8.5.5
+nvidia-cudnn-cu12==9.28.1.4

@@ -16,7 +16,9 @@ For HomeAssistant, RFW provides some additional functionality that the integrate
 
 ## Installation & Usage
 
-To install Remote Faster Whisper, clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./setup.sh`). You will be prompted for several configuration details, including the path to install it to, whether to install a service unit for it or not, and what user to run it as (for service deploys only). It will then install Remote Faster Whisper and the dependencies from `requirements.txt` inside a virtualenv in the specified path, (if chosen) install the systemd unit file into `/etc/systemd/system`, and then finally prompt you to edit the configuration file and start/enable the service. You can also perform these steps manually if you so choose.
+To install Remote Faster Whisper, clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./setup.sh`). You will be prompted for several configuration details, including the path to install it to, whether to install the CUDA libraries for NVIDIA GPU support, whether to install a service unit for it or not, and what user to run it as (for service deploys only). It will then install Remote Faster Whisper and the dependencies from `requirements.txt` (and, if chosen, `requirements-cuda.txt`) inside a virtualenv in the specified path, (if chosen) install the systemd unit file into `/etc/systemd/system`, and then finally prompt you to edit the configuration file and start/enable the service. You can also perform these steps manually if you so choose.
+
+`setup.sh` can be re-run on an existing installation to update or rebuild it, for instance after updating this repository or upgrading the system Python. An existing `config.yaml` is always preserved, and an existing systemd unit file is backed up if it would be changed.
 
 ### Docker
 
@@ -72,7 +74,7 @@ The model to use for transcribing. Can be [any valid model that Faster Whisper s
 
 #### `faster_whisper` -> `device`
 
-The device to use for transcription processing. Can be one of `auto`, `cpu`, or `cuda`. Note that CUDA requires [nVidia libraries to operate correctly](https://github.com/guillaumekln/faster-whisper#gpu-support); these should be installed by `torch` on supported systems by default.
+The device to use for transcription processing. Can be one of `auto`, `cpu`, or `cuda`. Note that CUDA requires [nVidia libraries to operate correctly](https://github.com/guillaumekln/faster-whisper#gpu-support); these are installed from `requirements-cuda.txt` by `setup.sh` (if chosen) and are included in the Docker image.
 
 #### `faster_whisper` -> `device_index`
 

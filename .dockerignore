@@ -3,3 +3,4 @@
 !remote_faster_whisper.py
 !entrypoint.sh
 !config.yaml.template
+!requirements-cuda.txt
