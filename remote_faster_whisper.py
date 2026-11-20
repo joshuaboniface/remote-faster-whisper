@@ -26,6 +26,7 @@ import wave
 from configargparse import ArgParser
 from flask import Flask, Blueprint, request
 from gunicorn.app.base import BaseApplication
+from gunicorn.glogging import Logger as GunicornLogger
 from huggingface_hub.errors import LocalEntryNotFoundError
 from werkzeug.exceptions import HTTPException
 from faster_whisper import WhisperModel
@@ -111,6 +112,12 @@ class FasterWhisperApi:
         if self.save_audio:
             if not exists(self.save_path):
                 makedirs(self.save_path)
+
+        @self.blueprint.route("/health", methods=["GET"])
+        def health():
+            if self.whisper_model is None:
+                return {"status": "loading", "model": self.model}, 503
+            return {"status": "ok", "model": self.model}
 
         @self.blueprint.route("/transcribe", methods=["POST"])
         def transcribe():
@@ -357,6 +364,17 @@ def save_wav(path, audio):
         fh.writeframes(pcm.tobytes())
 
 
+class AccessLogger(GunicornLogger):
+    """
+    Gunicorn logger which leaves health checks out of the access log
+    """
+
+    def access(self, resp, req, environ, request_time):
+        if environ.get("PATH_INFO", "").endswith("/health"):
+            return
+        super().access(resp, req, environ, request_time)
+
+
 class GunicornApplication(BaseApplication):
     """
     Run a WSGI application with Gunicorn, using the given options
@@ -417,6 +435,7 @@ def start_api():
         "timeout": daemon_config.get("timeout") or 120,
         "proc_name": "remote-faster-whisper",
         "accesslog": "-",
+        "logger_class": AccessLogger,
         "errorlog": "-",
         "access_log_format": '%(t)s %(h)s "%(r)s" %(s)s %(b)s %(L)ss',
         "control_socket_disable": True,
