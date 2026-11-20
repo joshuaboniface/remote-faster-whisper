@@ -35,7 +35,7 @@ from time import time
 from yaml import safe_load
 from numpy import float32
 from soundfile import read as sf_read
-from re import sub, search
+import re
 import numpy as np
 
 # Log in the same format as Gunicorn's own error log; StreamHandler flushes after every
@@ -44,6 +44,14 @@ LOG_FORMAT = "%(asctime)s [%(process)d] [%(levelname)s] %(message)s"
 LOG_DATEFMT = "[%Y-%m-%d %H:%M:%S %z]"
 
 logger = logging.getLogger("remote_faster_whisper")
+
+# Special transformations, in the order they are applied
+SPECIAL_TRANSFORMATIONS = {
+    "lower": str.lower,
+    "casefold": str.casefold,
+    "upper": str.upper,
+    "title": str.title,
+}
 
 
 def setup_logging():
@@ -70,7 +78,10 @@ class FasterWhisperApi:
         self.app = Flask(__name__)
         self.blueprint = Blueprint("api", __name__, url_prefix=base_url)
 
-        self.transformations = transformations or []
+        (
+            self.special_transformations,
+            self.regex_transformations,
+        ) = compile_transformations(transformations)
         self.whisper_model = None
 
         self.model_cache_dir = faster_whisper_config.get(
@@ -183,24 +194,7 @@ class FasterWhisperApi:
             found_text.append(segment.text)
         text = " ".join(found_text).strip()
 
-        # Perform transformations on text
-        if 'lower' in self.transformations:
-            text = text.lower()
-        if 'casefold' in self.transformations:
-            text = text.casefold()
-        if 'upper' in self.transformations:
-            text = text.upper()
-        if 'title' in self.transformations:
-            text = text.title()
-        for tr in self.transformations:
-            if not isinstance(tr, list):
-                continue
-            if search(tr[0], text):
-                _text = text
-                text = sub(tr[0], tr[1], text)
-                logger.info(
-                    f'Transforming "{tr[0]}" -> "{tr[1]}": pre "{_text}", post "{text}"'
-                )
+        text = self.apply_transformations(text)
 
         t_end = time()
         t_run = t_end - t_start
@@ -215,6 +209,61 @@ class FasterWhisperApi:
 
         logger.info(f"Result: {result}")
         return result
+
+    def apply_transformations(self, text):
+        """
+        Apply the special transformations, then the regex transformations, to {text}
+        """
+        for name in self.special_transformations:
+            text = SPECIAL_TRANSFORMATIONS[name](text)
+
+        for pattern, replacement in self.regex_transformations:
+            if pattern.search(text):
+                _text = text
+                text = pattern.sub(replacement, text)
+                logger.info(
+                    f'Transforming "{pattern.pattern}" -> "{replacement}": '
+                    f'pre "{_text}", post "{text}"'
+                )
+
+        return text
+
+
+def compile_transformations(transformations):
+    """
+    Validate and compile the configured {transformations}
+
+    Returns the special transformations to apply (in the order they are applied), and
+    a list of (compiled regex, replacement) tuples. Raises ValueError for an invalid
+    transformation, so that a bad configuration is caught at startup.
+    """
+    special = set()
+    regexes = []
+
+    for idx, tr in enumerate(transformations or [], start=1):
+        if isinstance(tr, str):
+            if tr not in SPECIAL_TRANSFORMATIONS:
+                raise ValueError(
+                    f"transformation {idx}: unknown special transformation '{tr}' "
+                    f"(expected one of: {', '.join(SPECIAL_TRANSFORMATIONS)})"
+                )
+            special.add(tr)
+        elif isinstance(tr, list) and len(tr) == 2 and isinstance(tr[0], str):
+            try:
+                pattern = re.compile(tr[0])
+            except re.error as e:
+                raise ValueError(f"transformation {idx}: invalid regex '{tr[0]}': {e}")
+            replacement = "" if tr[1] is None else str(tr[1])
+            regexes.append((pattern, replacement))
+        else:
+            raise ValueError(
+                f"transformation {idx}: expected a special transformation name or a "
+                f"[regex, replacement] pair, not {tr!r}"
+            )
+
+    # Special transformations are always applied first, in a fixed order
+    special = [name for name in SPECIAL_TRANSFORMATIONS if name in special]
+    return special, regexes
 
 
 def parse_args():
@@ -293,11 +342,15 @@ def start_api():
     config = parse_config(options.config) or {}
     daemon_config = config.get("daemon") or {}
 
-    api = FasterWhisperApi(
-        base_url=daemon_config.get("base_url", "/api/v0"),
-        faster_whisper_config=config.get("faster_whisper") or {},
-        transformations=config.get("transformations") or [],
-    )
+    try:
+        api = FasterWhisperApi(
+            base_url=daemon_config.get("base_url", "/api/v0"),
+            faster_whisper_config=config.get("faster_whisper") or {},
+            transformations=config.get("transformations") or [],
+        )
+    except ValueError as e:
+        logger.error(f"Invalid configuration: {e}")
+        sys.exit(1)
 
     model_path = api.download_model()
 
