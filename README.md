@@ -46,7 +46,7 @@ The JSON response will look something like:
 {'language': 'en', 'language_probability': 0.9578803181648254, 'runtime': 0.30777573585510254, 'sample_duration': 1.7763125, 'text': 'Hello world'}
 ```
 
-Remote Faster Whisper is currently very sparse. It is not a real Python module or package, and it uses the `faster_whisper` library directly (rather than a wrapper such as `SpeechRecognition`, though it does leverage some of that library's helper functions). These deficiencies may change in the future, and contributions are welcome.
+Remote Faster Whisper is currently very sparse. It is not a real Python module or package, and it uses the `faster_whisper` library directly (rather than a wrapper such as `SpeechRecognition`). These deficiencies may change in the future, and contributions are welcome.
 
 ## Configuration Options
 

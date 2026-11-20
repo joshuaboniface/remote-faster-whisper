@@ -22,20 +22,17 @@
 import av
 import logging
 import sys
+import wave
 from configargparse import ArgParser
 from flask import Flask, Blueprint, request
 from gunicorn.app.base import BaseApplication
 from werkzeug.exceptions import HTTPException
-from speech_recognition.audio import AudioData
 from faster_whisper import WhisperModel
 from faster_whisper.utils import download_model
-from io import BytesIO
 from os.path import exists, isdir
 from os import makedirs
 from time import time
 from yaml import safe_load
-from numpy import float32
-from soundfile import read as sf_read
 import re
 import numpy as np
 
@@ -45,6 +42,9 @@ LOG_FORMAT = "%(asctime)s [%(process)d] [%(levelname)s] %(message)s"
 LOG_DATEFMT = "[%Y-%m-%d %H:%M:%S %z]"
 
 logger = logging.getLogger("remote_faster_whisper")
+
+# The sample rate Whisper models expect
+SAMPLE_RATE = 16000
 
 # Special transformations, in the order they are applied
 SPECIAL_TRANSFORMATIONS = {
@@ -115,25 +115,20 @@ class FasterWhisperApi:
                     "message": "Request data did not contain an 'audio_file' in its files"
                 }, 400
 
-            try:
-                audio_bytes, sample_rate = convert_audio_to_wav(f)
-                if audio_bytes is None:
-                    raise ValueError("Invalid audio format")
-
-                audio_data = AudioData(audio_bytes, sample_rate, 2)
-
-                if self.save_audio:
-                    runtime = time()
-                    makedirs(f"{self.save_path}/{runtime}", exist_ok=True)
-                    with open(f"{self.save_path}/{runtime}/audio.wav", "wb") as fh:
-                        fh.write(audio_bytes)
-
-            except Exception:
+            audio = decode_audio(f)
+            if audio is None:
                 return {
                     "message": "The 'audio_file' must contain a valid audio format"
                 }, 400
+            if len(audio) == 0:
+                return {"message": "The 'audio_file' does not contain any audio"}, 400
 
-            return self.perform_faster_whisper_recognition(audio_data)
+            if self.save_audio:
+                save_dir = f"{self.save_path}/{time()}"
+                makedirs(save_dir, exist_ok=True)
+                save_wav(f"{save_dir}/audio.wav", audio)
+
+            return self.perform_faster_whisper_recognition(audio)
 
         self.app.register_blueprint(self.blueprint)
 
@@ -181,20 +176,15 @@ class FasterWhisperApi:
         )
         logger.info("WhisperModel instance initialized")
 
-    def perform_faster_whisper_recognition(self, audio_data):
+    def perform_faster_whisper_recognition(self, audio):
         """
-        Perform recognition on {audio_data} with model
+        Perform recognition on {audio} (16kHz mono float32 samples) with model
         """
         logger.info("Performing recognition on audio data")
 
         t_start = time()
-        wav_bytes = audio_data.get_wav_data(convert_rate=16000)
-        wav_stream = BytesIO(wav_bytes)
-        audio_array, sampling_rate = sf_read(wav_stream)
-        audio_array = audio_array.astype(float32)
-
         segments, info = self.whisper_model.transcribe(
-            audio_array,
+            audio,
             beam_size=self.beam_size,
             language=self.language,
             task="translate" if self.translate else "transcribe",
@@ -301,13 +291,14 @@ def parse_config(configfile):
     return config
 
 
-def convert_audio_to_wav(file):
+def decode_audio(file):
     """
-    Convert any audio format to WAV using PyAv
+    Decode an uploaded audio {file} in any format supported by PyAV into the 16kHz
+    mono float32 samples that Whisper expects; returns None if it can't be decoded
     """
     try:
         resampler = av.audio.resampler.AudioResampler(
-            format="s16", layout="mono", rate=16000
+            format="flt", layout="mono", rate=SAMPLE_RATE
         )
         audio_data = []
         with av.open(file.stream) as container:
@@ -318,12 +309,25 @@ def convert_audio_to_wav(file):
         # Flush any samples still buffered in the resampler
         for resampled_frame in resampler.resample(None):
             audio_data.append(resampled_frame.to_ndarray().flatten())
-
-        audio_array = np.concatenate(audio_data) if audio_data else np.array([], dtype=np.int16)
-        return audio_array.tobytes(), 16000
     except Exception as e:
         logger.warning(f"Error decoding audio: {e}")
-        return None, None
+        return None
+
+    if not audio_data:
+        return np.array([], dtype=np.float32)
+    return np.concatenate(audio_data)
+
+
+def save_wav(path, audio):
+    """
+    Save {audio} (16kHz mono float32 samples) to {path} as a 16-bit PCM WAV file
+    """
+    pcm = (np.clip(audio, -1.0, 1.0) * 32767).astype("<i2")
+    with wave.open(path, "wb") as fh:
+        fh.setnchannels(1)
+        fh.setsampwidth(2)
+        fh.setframerate(SAMPLE_RATE)
+        fh.writeframes(pcm.tobytes())
 
 
 class GunicornApplication(BaseApplication):
