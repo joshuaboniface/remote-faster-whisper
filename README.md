@@ -22,9 +22,9 @@ You can run Remote Faster Whisper in two ways: via Docker, or via a direct insta
 
 A Docker image is published to the GitHub Container Registry as `ghcr.io/joshuaboniface/remote-faster-whisper`, built from the [`Dockerfile`](/Dockerfile) on every push to `master` (tagged `latest`) and on every `v*` release tag. It includes the CUDA 12 cuBLAS and cuDNN 9 libraries needed for GPU support, so only the NVIDIA driver and [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) are needed on the host.
 
-An example [`docker-compose.yaml`](/docker-compose.yaml) is provided. Copy it and `config.yaml` to a directory on the host, edit `config.yaml` (setting `daemon` -> `listen` to `0.0.0.0` and `faster_whisper` -> `model_cache_dir` to `/models`), and then run `docker compose up -d`. Models are cached to the `./models` directory, and the configuration is mounted at `/config/config.yaml` in the container. For CPU-only operation, remove the `deploy:` section from the compose file and set `device` to `cpu` or `auto`.
+An example [`docker-compose.yaml`](/docker-compose.yaml) is provided. Copy it and `config.yaml` to a directory on the host, edit `config.yaml` as desired, and then run `docker compose up -d`. The example `config.yaml` defaults are suitable for Docker: it listens on `0.0.0.0` inside the container (choose the host address and port in the compose `ports:` mapping instead), and caches models in the `/models` volume, mapped to the `./models` directory. The configuration is mounted at `/config/config.yaml` in the container. For CPU-only operation, remove the `deploy:` section from the compose file.
 
-Alternatively, if no configuration file is mounted, a basic one (without `transformations`) is generated from the following environment variables, shown with their defaults: `LISTEN` (`0.0.0.0`), `PORT` (`9876`), `BASE_URL` (`/api/v0`), `MODEL_CACHE_DIR` (`/models`), `MODEL` (`small`), `DEVICE` (`cuda`), `DEVICE_INDEX` (`0`), `COMPUTE_TYPE` (`int8`), `BEAM_SIZE` (`5`), `TRANSLATE` (`yes`), and `LANGUAGE` (empty, i.e. auto-detect).
+Alternatively, if no configuration file is mounted, a basic one (without `transformations`) is generated from the following environment variables, shown with their defaults: `LISTEN` (`0.0.0.0`), `PORT` (`9876`), `BASE_URL` (`/api/v0`), `THREADS` (`4`), `TIMEOUT` (`120`), `MODEL_CACHE_DIR` (`/models`), `MODEL` (`small`), `DEVICE` (`auto`), `DEVICE_INDEX` (`0`), `COMPUTE_TYPE` (`int8`), `BEAM_SIZE` (`5`), `TRANSLATE` (`yes`), and `LANGUAGE` (empty, i.e. auto-detect).
 
 To build the image locally instead, run `docker build -t remote-faster-whisper .` in this repository.
 
@@ -46,11 +46,11 @@ The JSON response will look something like:
 {'language': 'en', 'language_probability': 0.9578803181648254, 'runtime': 0.30777573585510254, 'sample_duration': 1.7763125, 'text': 'Hello world'}
 ```
 
-Remote Faster Whisper is currently very sparse. It is not a real Python module or package, it runs as a Flask development server, and it uses the `faster_whisper` library directly (rather than a wrapper such as `SpeechRecognition`, though it does leverage some of that library's helper functions). These deficiencies may change in the future, and contributions are welcome.
+Remote Faster Whisper is currently very sparse. It is not a real Python module or package, and it uses the `faster_whisper` library directly (rather than a wrapper such as `SpeechRecognition`, though it does leverage some of that library's helper functions). These deficiencies may change in the future, and contributions are welcome.
 
 ## Configuration Options
 
-The configuration file `config.yaml` is divided into three main sections: `daemon:` controls the Flask API daemon itself; `faster_whisper:` controls the Faster Whisper transcription library; and `transformations:` which define transformations to make on the output text.
+The configuration file `config.yaml` is divided into three main sections: `daemon:` controls the API daemon itself; `faster_whisper:` controls the Faster Whisper transcription library; and `transformations:` which define transformations to make on the output text.
 
 #### `daemon` -> `listen`
 
@@ -64,11 +64,21 @@ The port to listen on. We default to `9876` but this can be changed as desired t
 
 The base URL for the API. This defaults to `/api/v0` but this can be changed to anything or an empty value if desired.
 
+#### `daemon` -> `threads`
+
+The number of threads used to handle requests concurrently. Defaults to `4`.
+
+The API is served by [Gunicorn](https://gunicorn.org/) with a single worker process, since each worker process would need its own copy of the model in (GPU) memory; concurrent requests are instead handled by these threads, sharing the one model instance.
+
+#### `daemon` -> `timeout`
+
+The Gunicorn worker timeout, in seconds. Defaults to `120`. This must also be long enough for the worker to load the model at startup, so you may need to increase it for very large models or slow storage.
+
 #### `faster_whisper` -> `model_cache_dir`
 
-The directory to cache Faster Whisper models. We recommend a RAM disk (`tmpfs`) for this to improve performance, though any path can be used.
+The directory to cache Faster Whisper models. In Docker, this should be the `/models` volume (the default in the example `config.yaml`); for direct installations, `setup.sh` sets it to a `models` directory in the installation path when installing a new configuration.
 
-Remote Faster Whisper will attempt to download the `model` below at startup if this path is not found; this may take some time with slow network connections. This is done at startup, rather than during the first transcription to improve the user experience. If the directory exists but the model is missing, it will be downloaded when the first transcription occurs.
+Remote Faster Whisper will download the `model` below into this directory at startup if it is not already cached; this may take some time with slow network connections. This is done at startup, before the API starts accepting requests, rather than during the first transcription to improve the user experience.
 
 **Note**: When using a service install with a dynamic user (the default if no user is specified), this option **must** be set to a temporary directory (under `/tmp` or `/var/tmp`), and note that the model will be cached to an ephemeral directory valid only for the time the service is active. Thus the model will be re-downloaded each time the daemon starts. To avoid this, use a real user for the daemon, or use a pre-configured cache containing the model you wish to use outside of these temporary paths.
 

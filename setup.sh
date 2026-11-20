@@ -78,7 +78,19 @@ cp remote_faster_whisper.py "${dest_path}/bin/remote_faster_whisper"
 
 # Only install the example configuration if there isn't one already
 if [[ ! -f ${dest_path}/config.yaml ]]; then
-    cp config.yaml "${dest_path}/config.yaml"
+    # The example configuration caches models in /models (for Docker); use a directory
+    # in the installation path instead, or /tmp for a dynamic user (which can't write
+    # to it)
+    if [[ ${service} == "true" && -z ${username} ]]; then
+        model_cache_dir="/tmp/whisper-cache"
+    else
+        model_cache_dir="${dest_path}/models"
+        mkdir -p "${model_cache_dir}"
+        if [[ -n ${username} ]]; then
+            chown "${username}" "${model_cache_dir}"
+        fi
+    fi
+    sed "s|^\(  model_cache_dir:\).*|\1 ${model_cache_dir}|" config.yaml > "${dest_path}/config.yaml"
     new_config="true"
 fi
 

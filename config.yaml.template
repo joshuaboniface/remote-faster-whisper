@@ -2,6 +2,8 @@ daemon:
   listen: $LISTEN
   port: $PORT
   base_url: $BASE_URL
+  threads: $THREADS
+  timeout: $TIMEOUT
 
 faster_whisper:
   model_cache_dir: $MODEL_CACHE_DIR

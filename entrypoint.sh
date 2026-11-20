@@ -11,9 +11,11 @@ if [[ ! -f ${CONFIG_FILE} ]]; then
     export LISTEN=${LISTEN:-0.0.0.0}
     export PORT=${PORT:-9876}
     export BASE_URL=${BASE_URL:-/api/v0}
+    export THREADS=${THREADS:-4}
+    export TIMEOUT=${TIMEOUT:-120}
     export MODEL_CACHE_DIR=${MODEL_CACHE_DIR:-/models}
     export MODEL=${MODEL:-small}
-    export DEVICE=${DEVICE:-cuda}
+    export DEVICE=${DEVICE:-auto}
     export DEVICE_INDEX=${DEVICE_INDEX:-0}
     export COMPUTE_TYPE=${COMPUTE_TYPE:-int8}
     export BEAM_SIZE=${BEAM_SIZE:-5}

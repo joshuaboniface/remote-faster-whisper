@@ -5,3 +5,4 @@ faster_whisper
 flask
 configargparse
 av
+gunicorn

@@ -20,29 +20,49 @@
 ###############################################################################
 
 import av
+import logging
+import sys
 from configargparse import ArgParser
 from flask import Flask, Blueprint, request
+from gunicorn.app.base import BaseApplication
 from speech_recognition.audio import AudioData
 from faster_whisper import WhisperModel
+from faster_whisper.utils import download_model
 from io import BytesIO
-from os.path import exists
+from os.path import exists, isdir
 from os import makedirs
 from time import time
 from yaml import safe_load
-from speech_recognition import Recognizer
 from numpy import float32
 from soundfile import read as sf_read
 from re import sub, search
 import numpy as np
 
+# Log in the same format as Gunicorn's own error log; StreamHandler flushes after every
+# record, so log output is never delayed by Python's output buffering
+LOG_FORMAT = "%(asctime)s [%(process)d] [%(levelname)s] %(message)s"
+LOG_DATEFMT = "[%Y-%m-%d %H:%M:%S %z]"
+
+logger = logging.getLogger("remote_faster_whisper")
+
+
+def setup_logging():
+    """
+    Configure the application logger to log to stderr
+    """
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter(LOG_FORMAT, LOG_DATEFMT))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+
 class FasterWhisperApi:
     def __init__(
         self,
-        listen="127.0.0.1",
-        port=9876,
         base_url="/api/v0",
         faster_whisper_config={},
-        transformations={},
+        transformations=[],
     ):
         """
         Initialize the API and Faster Whisper configuration
@@ -50,10 +70,8 @@ class FasterWhisperApi:
         self.app = Flask(__name__)
         self.blueprint = Blueprint("api", __name__, url_prefix=base_url)
 
-        self.listen = listen
-        self.port = port
-
-        self.transformations = transformations
+        self.transformations = transformations or []
+        self.whisper_model = None
 
         self.model_cache_dir = faster_whisper_config.get(
             "model_cache_dir", "/tmp/whisper-cache"
@@ -89,45 +107,63 @@ class FasterWhisperApi:
                 audio_bytes, sample_rate = convert_audio_to_wav(f)
                 if audio_bytes is None:
                     raise ValueError("Invalid audio format")
-                
+
                 audio_data = AudioData(audio_bytes, sample_rate, 2)
-                
+
                 if self.save_audio:
                     runtime = time()
                     makedirs(f"{self.save_path}/{runtime}", exist_ok=True)
                     with open(f"{self.save_path}/{runtime}/audio.wav", "wb") as fh:
                         fh.write(audio_bytes)
-            
+
             except Exception:
                 return {
-                     "message": "The 'audio_file' must contain a valid audio format"
+                    "message": "The 'audio_file' must contain a valid audio format"
                 }, 400
 
             return self.perform_faster_whisper_recognition(audio_data)
 
         self.app.register_blueprint(self.blueprint)
 
-    def start(self):
+    def download_model(self):
         """
-        Initialize the WhisperModel (including downloading the model files) and start the API
+        Download the model files (if required) and return their local path
+
+        This is done in the main process before the Gunicorn worker starts, so that a
+        slow download cannot exceed the worker timeout.
         """
-        print("Initializing WhisperModel instance")
+        if isdir(self.model):
+            return self.model
+
+        logger.info(f"Fetching model '{self.model}' into {self.model_cache_dir}")
+        model_path = download_model(self.model, cache_dir=self.model_cache_dir)
+        logger.info(f"Model '{self.model}' is available at {model_path}")
+        return model_path
+
+    def load_model(self, model_path):
+        """
+        Initialize the WhisperModel instance from the local model files
+
+        This must be done in the Gunicorn worker (i.e. after forking), as CUDA cannot be
+        initialized before a fork.
+        """
+        logger.info(
+            f"Initializing WhisperModel instance on device '{self.device}' "
+            f"(index {self.device_index}) with compute type '{self.compute_type}'"
+        )
         self.whisper_model = WhisperModel(
-            self.model,
+            model_path,
             device=self.device,
             device_index=self.device_index,
             compute_type=self.compute_type,
-            download_root=self.model_cache_dir,
         )
-
-        print("Starting API")
-        self.app.run(debug=False, host=self.listen, port=self.port)
+        logger.info("WhisperModel instance initialized")
 
     def perform_faster_whisper_recognition(self, audio_data):
         """
         Perform recognition on {audio_data} with model
         """
-        print("Performing recognition on audio data")
+        logger.info("Performing recognition on audio data")
 
         t_start = time()
         wav_bytes = audio_data.get_wav_data(convert_rate=16000)
@@ -162,7 +198,9 @@ class FasterWhisperApi:
             if search(tr[0], text):
                 _text = text
                 text = sub(tr[0], tr[1], text)
-                print(f'Transforming "{tr[0]}" -> "{tr[1]}": pre "{_text}", post "{text}"')
+                logger.info(
+                    f'Transforming "{tr[0]}" -> "{tr[1]}": pre "{_text}", post "{text}"'
+                )
 
         t_end = time()
         t_run = t_end - t_start
@@ -175,7 +213,7 @@ class FasterWhisperApi:
             "runtime": t_run,
         }
 
-        print(f"Result: {result}")
+        logger.info(f"Result: {result}")
         return result
 
 
@@ -213,29 +251,86 @@ def convert_audio_to_wav(file):
         container = av.open(file.stream)
         audio_stream = next(s for s in container.streams if s.type == 'audio')
         resampler = av.audio.resampler.AudioResampler(format='s16', layout='mono', rate=16000)
-        
+
         audio_data = []
         for frame in container.decode(audio_stream):
             resampled_frames = resampler.resample(frame)
             for resampled_frame in resampled_frames:
                 audio_data.append(resampled_frame.to_ndarray().flatten())
-        
+
         audio_array = np.concatenate(audio_data) if audio_data else np.array([], dtype=np.int16)
         return audio_array.tobytes(), 16000
     except Exception as e:
-        print(f"Error decoding audio: {e}")
+        logger.warning(f"Error decoding audio: {e}")
         return None, None
 
 
+class GunicornApplication(BaseApplication):
+    """
+    Run a WSGI application with Gunicorn, using the given options
+    """
+
+    def __init__(self, app_loader, options):
+        self.app_loader = app_loader
+        self.options = options
+        super().__init__()
+
+    def load_config(self):
+        for key, value in self.options.items():
+            self.cfg.set(key, value)
+
+    def load(self):
+        return self.app_loader()
+
+
 def start_api():
+    """
+    Parse arguments, grab configuration, fetch the model, and start the API
+    """
+    setup_logging()
+
     options = parse_args()
-    config = parse_config(options.config)
+    config = parse_config(options.config) or {}
+    daemon_config = config.get("daemon") or {}
+
     api = FasterWhisperApi(
-        **config["daemon"],
-        faster_whisper_config=config["faster_whisper"],
-        transformations=config.get("transformations", {}),
+        base_url=daemon_config.get("base_url", "/api/v0"),
+        faster_whisper_config=config.get("faster_whisper") or {},
+        transformations=config.get("transformations") or [],
     )
-    api.start()
+
+    model_path = api.download_model()
+
+    def app_loader():
+        api.load_model(model_path)
+        return api.app
+
+    listen = daemon_config.get("listen") or "0.0.0.0"
+    if ":" in listen and not listen.startswith("["):
+        listen = f"[{listen}]"  # IPv6 address
+    port = daemon_config.get("port") or 9876
+
+    gunicorn_options = {
+        "bind": f"{listen}:{port}",
+        # A single worker process, as each worker would need its own copy of the model
+        # in (GPU) memory; concurrent requests are instead handled by threads
+        "workers": 1,
+        "worker_class": "gthread",
+        "threads": daemon_config.get("threads") or 4,
+        # Must also allow enough time for the worker to load the model at startup
+        "timeout": daemon_config.get("timeout") or 120,
+        "proc_name": "remote-faster-whisper",
+        "accesslog": "-",
+        "errorlog": "-",
+        "access_log_format": '%(t)s %(h)s "%(r)s" %(s)s %(b)s %(L)ss',
+        "control_socket_disable": True,
+    }
+    # Avoid worker heartbeat stalls on slow (e.g. overlay) filesystems
+    if isdir("/dev/shm"):
+        gunicorn_options["worker_tmp_dir"] = "/dev/shm"
+
+    logger.info(f"Starting API on {gunicorn_options['bind']}")
+    GunicornApplication(app_loader, gunicorn_options).run()
 
 
 # Main entrypoint

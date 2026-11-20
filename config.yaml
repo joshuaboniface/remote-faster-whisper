@@ -1,21 +1,27 @@
 ---
 daemon:
+  # Inside Docker, keep 0.0.0.0 and choose the host address/port in the port mapping
   listen: 0.0.0.0
   port: 9876
   base_url: "/api/v0"
+  # Number of threads handling requests concurrently
+  threads: 4
+  # Worker timeout in seconds; must also allow enough time to load the model at startup
+  timeout: 120
 
 faster_whisper:
   debug:
     save_audio: no
     save_path: /tmp/rfw
-  model_cache_dir: /tmp/whisper-cache
+  # The /models volume in Docker
+  model_cache_dir: /models
   model: small
-  device: cuda
-  device_index: 1
+  device: auto
+  device_index: 0
   compute_type: int8
   beam_size: 5
   translate: yes
-  language: 
+  language:
 
 transformations:
 # Examples:
