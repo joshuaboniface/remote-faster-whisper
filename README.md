@@ -20,7 +20,7 @@ You can run Remote Faster Whisper in two ways: via Docker, or via a direct insta
 
 ### Docker
 
-A Docker image is published to the GitHub Container Registry as `ghcr.io/joshuaboniface/remote-faster-whisper`, built from the [`Dockerfile`](/Dockerfile) on every push to `master` (tagged `latest`) and on every `v*` release tag. It includes the CUDA 12 cuBLAS and cuDNN 9 libraries needed for GPU support, so only the NVIDIA driver and [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) are needed on the host.
+A Docker image is published to the GitHub Container Registry as `ghcr.io/joshuaboniface/remote-faster-whisper`, built from the [`Dockerfile`](/Dockerfile) on every push to `master` (tagged `latest`) and on every release tag (e.g. `v1.0`, published as `1.0` and `1`). It includes the CUDA 12 cuBLAS and cuDNN 9 libraries needed for GPU support, so only the NVIDIA driver and [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) are needed on the host.
 
 An example [`docker-compose.yaml`](/docker-compose.yaml) is provided. Copy it and `config.yaml` to a directory on the host, edit `config.yaml` as desired, and then run `docker compose up -d`. The example `config.yaml` defaults are suitable for Docker: it listens on `0.0.0.0` inside the container (choose the host address and port in the compose `ports:` mapping instead), and caches models in the `/models` volume, mapped to the `./models` directory. The configuration is mounted at `/config/config.yaml` in the container. For CPU-only operation, remove the `deploy:` section from the compose file.
 
