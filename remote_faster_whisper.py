@@ -25,6 +25,7 @@ import sys
 from configargparse import ArgParser
 from flask import Flask, Blueprint, request
 from gunicorn.app.base import BaseApplication
+from werkzeug.exceptions import HTTPException
 from speech_recognition.audio import AudioData
 from faster_whisper import WhisperModel
 from faster_whisper.utils import download_model
@@ -135,6 +136,16 @@ class FasterWhisperApi:
             return self.perform_faster_whisper_recognition(audio_data)
 
         self.app.register_blueprint(self.blueprint)
+
+        # Return errors as JSON, like the API's other responses, rather than HTML
+        @self.app.errorhandler(HTTPException)
+        def handle_http_error(e):
+            return {"message": e.description}, e.code
+
+        @self.app.errorhandler(Exception)
+        def handle_error(e):
+            logger.exception("Error processing request")
+            return {"message": f"Internal error: {e}"}, 500
 
     def download_model(self):
         """
