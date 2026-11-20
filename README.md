@@ -36,9 +36,9 @@ Clone this repository to your system and run `setup.sh` as root (e.g. `sudo ./se
 
 ## Usage
 
-Once running, you can HTTP `POST` binary WAV audio file data to the `/api/v0/transcribe` endpoint, and receive a JSON response of the transcription text and details. A simple test client is provided as `send.py` to validate a running instance with a local `wav` file.
+Once running, you can HTTP `POST` an audio file to the `/api/v0/transcribe` endpoint, and receive a JSON response of the transcription text and details. A simple test client is provided as `send.py` to validate a running instance with a local audio file.
 
-**Note**: You **must** `POST` the audio data as `files` with the name `audio_file` as shown in the [test client](/send.py#L28) or the [Kalliope STT example](/kalliope/remote_fasterwhisper/remote_fasterwhisper.py#L35), and the data **must** be valid PCM WAV data (not FLAC, mp3, or any other formats). Uploads are limited to 20MB, which is more than 1 minute of uncompressed 48kHz 16-bit stereo audio; larger uploads are rejected with a `413` error.
+**Note**: You **must** `POST` the audio data as `files` with the name `audio_file` as shown in the [test client](/send.py#L28) or the [Kalliope STT example](/kalliope/remote_fasterwhisper/remote_fasterwhisper.py#L35), and the data must be in an audio format that FFmpeg (via PyAV) can decode, for example WAV, FLAC, MP3, Opus, or AAC/M4A. Uploads are limited to 20MB, which is more than 1 minute of uncompressed 48kHz 16-bit stereo audio; larger uploads are rejected with a `413` error.
 
 A `GET` to the `/api/v0/health` endpoint returns `{"status": "ok", ...}` with a `200` status once the model is loaded, and is used by the Docker image's `HEALTHCHECK`, so `docker ps` shows whether the API is healthy. Health checks are not included in the access log.
 
