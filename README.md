@@ -24,7 +24,7 @@ A Docker image is published to the GitHub Container Registry as `ghcr.io/joshuab
 
 An example [`docker-compose.yaml`](/docker-compose.yaml) is provided. Copy it and `config.yaml` to a directory on the host, edit `config.yaml` as desired, and then run `docker compose up -d`. The example `config.yaml` defaults are suitable for Docker: it listens on `0.0.0.0` inside the container (choose the host address and port in the compose `ports:` mapping instead), and caches models in the `/models` volume, mapped to the `./models` directory. The configuration is mounted at `/config/config.yaml` in the container. For CPU-only operation, remove the `deploy:` section from the compose file.
 
-Alternatively, if no configuration file is mounted, a basic one (without `transformations`) is generated from the following environment variables, shown with their defaults: `LISTEN` (`0.0.0.0`), `PORT` (`9876`), `BASE_URL` (`/api/v0`), `THREADS` (`4`), `TIMEOUT` (`120`), `MODEL_CACHE_DIR` (`/models`), `MODEL` (`small`), `DEVICE` (`auto`), `DEVICE_INDEX` (`0`), `COMPUTE_TYPE` (`int8`), `BEAM_SIZE` (`5`), `TRANSLATE` (`yes`), and `LANGUAGE` (empty, i.e. auto-detect).
+Alternatively, if no configuration file is mounted, a basic one (without `transformations`) is generated from the following environment variables, shown with their defaults: `LISTEN` (`0.0.0.0`), `PORT` (`9876`), `BASE_URL` (`/api/v0`), `THREADS` (`4`), `TIMEOUT` (`120`), `MODEL_CACHE_DIR` (`/models`), `MODEL` (`small`), `DEVICE` (`auto`), `DEVICE_INDEX` (`0`), `COMPUTE_TYPE` (`int8`), `BEAM_SIZE` (`5`), `TRANSLATE` (`yes`), `LANGUAGE` (empty, i.e. auto-detect), and `HOTWORDS` (empty).
 
 To build the image locally instead, run `docker build -t remote-faster-whisper .` in this repository.
 
@@ -111,6 +111,10 @@ Whether or not to attempt translation on the incoming data to `language` (below)
 #### `faster_whisper` -> `language`
 
 The language to use, as a lowercase ISO language code (e.g. `en`, `fr`, `zh`, etc.). Leave empty (or remove) for automatic language selection.
+
+#### `faster_whisper` -> `hotwords`
+
+A comma-separated list of words and phrases that the transcriber should expect to hear, for example the names of your devices and rooms (`workbench lights, heater, bug zapper, on, off`). This nudges it towards those words when the audio is unclear, which can fix consistent mishearings without needing a `transformations` rule. Keep it to your actual vocabulary; leave empty (or remove) to disable.
 
 #### `transformations`
 

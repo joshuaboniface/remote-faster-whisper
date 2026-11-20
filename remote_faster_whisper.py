@@ -104,6 +104,7 @@ class FasterWhisperApi:
         self.language = faster_whisper_config.get("language", None)
         if not self.language:
             self.language = None
+        self.hotwords = faster_whisper_config.get("hotwords") or None
 
         self.save_audio = faster_whisper_config.get("debug", {}).get("save_audio")
         if self.save_audio:
@@ -206,6 +207,7 @@ class FasterWhisperApi:
             beam_size=self.beam_size,
             language=self.language,
             task="translate" if self.translate else "transcribe",
+            hotwords=self.hotwords,
         )
         list(segments)
         logger.info(f"WhisperModel warmed up in {time() - t_start:.2f}s")
@@ -222,6 +224,7 @@ class FasterWhisperApi:
             beam_size=self.beam_size,
             language=self.language,
             task="translate" if self.translate else "transcribe",
+            hotwords=self.hotwords,
         )
 
         # Each segment's text already begins with a space where one is needed

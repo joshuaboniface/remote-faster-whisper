@@ -14,3 +14,4 @@ faster_whisper:
   beam_size: $BEAM_SIZE
   translate: $TRANSLATE
   language: $LANGUAGE
+  hotwords: $HOTWORDS

@@ -22,6 +22,8 @@ faster_whisper:
   beam_size: 5
   translate: yes
   language:
+  # Words and phrases to listen for, e.g. the names of your devices
+  hotwords:
 
 transformations:
 # Examples:

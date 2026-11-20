@@ -21,6 +21,7 @@ if [[ ! -f ${CONFIG_FILE} ]]; then
     export BEAM_SIZE=${BEAM_SIZE:-5}
     export TRANSLATE=${TRANSLATE:-yes}
     export LANGUAGE=${LANGUAGE:-}
+    export HOTWORDS=${HOTWORDS:-}
 
     CONFIG_FILE=/tmp/config.yaml
     envsubst < /app/config.yaml.template > "${CONFIG_FILE}"
