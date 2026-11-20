@@ -184,6 +184,20 @@ class FasterWhisperApi:
         )
         logger.info("WhisperModel instance initialized")
 
+        # Run a test transcription of one second of silence. Libraries like cuBLAS and
+        # cuDNN are only loaded on first use, so this catches a broken GPU setup now,
+        # failing the worker at startup instead of every request; it also means that
+        # one-time device setup doesn't delay the first real request.
+        t_start = time()
+        segments, _ = self.whisper_model.transcribe(
+            np.zeros(SAMPLE_RATE, dtype=np.float32),
+            beam_size=self.beam_size,
+            language=self.language,
+            task="translate" if self.translate else "transcribe",
+        )
+        list(segments)
+        logger.info(f"WhisperModel warmed up in {time() - t_start:.2f}s")
+
     def perform_faster_whisper_recognition(self, audio):
         """
         Perform recognition on {audio} (16kHz mono float32 samples) with model
