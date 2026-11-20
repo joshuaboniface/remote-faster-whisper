@@ -306,15 +306,18 @@ def convert_audio_to_wav(file):
     Convert any audio format to WAV using PyAv
     """
     try:
-        container = av.open(file.stream)
-        audio_stream = next(s for s in container.streams if s.type == 'audio')
-        resampler = av.audio.resampler.AudioResampler(format='s16', layout='mono', rate=16000)
-
+        resampler = av.audio.resampler.AudioResampler(
+            format="s16", layout="mono", rate=16000
+        )
         audio_data = []
-        for frame in container.decode(audio_stream):
-            resampled_frames = resampler.resample(frame)
-            for resampled_frame in resampled_frames:
-                audio_data.append(resampled_frame.to_ndarray().flatten())
+        with av.open(file.stream) as container:
+            audio_stream = next(s for s in container.streams if s.type == "audio")
+            for frame in container.decode(audio_stream):
+                for resampled_frame in resampler.resample(frame):
+                    audio_data.append(resampled_frame.to_ndarray().flatten())
+        # Flush any samples still buffered in the resampler
+        for resampled_frame in resampler.resample(None):
+            audio_data.append(resampled_frame.to_ndarray().flatten())
 
         audio_array = np.concatenate(audio_data) if audio_data else np.array([], dtype=np.int16)
         return audio_array.tobytes(), 16000
