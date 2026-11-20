@@ -217,13 +217,13 @@ class FasterWhisperApi:
             text = SPECIAL_TRANSFORMATIONS[name](text)
 
         for pattern, replacement in self.regex_transformations:
-            if pattern.search(text):
-                _text = text
-                text = pattern.sub(replacement, text)
+            new_text, count = pattern.subn(replacement, text)
+            if count:
                 logger.info(
                     f'Transforming "{pattern.pattern}" -> "{replacement}": '
-                    f'pre "{_text}", post "{text}"'
+                    f'pre "{text}", post "{new_text}"'
                 )
+                text = new_text
 
         return text
 
