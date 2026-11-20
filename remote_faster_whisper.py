@@ -26,6 +26,7 @@ import wave
 from configargparse import ArgParser
 from flask import Flask, Blueprint, request
 from gunicorn.app.base import BaseApplication
+from huggingface_hub.errors import LocalEntryNotFoundError
 from werkzeug.exceptions import HTTPException
 from faster_whisper import WhisperModel
 from faster_whisper.utils import download_model
@@ -144,7 +145,8 @@ class FasterWhisperApi:
 
     def download_model(self):
         """
-        Download the model files (if required) and return their local path
+        Find the model files in the cache, downloading them if needed, and return their
+        local path
 
         This is done in the main process before the Gunicorn worker starts, so that a
         slow download cannot exceed the worker timeout.
@@ -152,9 +154,15 @@ class FasterWhisperApi:
         if isdir(self.model):
             return self.model
 
-        logger.info(f"Fetching model '{self.model}' into {self.model_cache_dir}")
-        model_path = download_model(self.model, cache_dir=self.model_cache_dir)
-        logger.info(f"Model '{self.model}' is available at {model_path}")
+        try:
+            model_path = download_model(
+                self.model, cache_dir=self.model_cache_dir, local_files_only=True
+            )
+            logger.info(f"Using cached model '{self.model}' at {model_path}")
+        except LocalEntryNotFoundError:
+            logger.info(f"Downloading model '{self.model}' into {self.model_cache_dir}")
+            model_path = download_model(self.model, cache_dir=self.model_cache_dir)
+            logger.info(f"Model '{self.model}' downloaded to {model_path}")
         return model_path
 
     def load_model(self, model_path):
