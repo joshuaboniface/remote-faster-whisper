@@ -22,6 +22,7 @@ if [[ ! -f ${CONFIG_FILE} ]]; then
     export TRANSLATE=${TRANSLATE:-yes}
     export LANGUAGE=${LANGUAGE:-}
     export HOTWORDS=${HOTWORDS:-}
+    export VAD_FILTER=${VAD_FILTER:-no}
 
     CONFIG_FILE=/tmp/config.yaml
     envsubst < /app/config.yaml.template > "${CONFIG_FILE}"

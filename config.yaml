@@ -24,6 +24,8 @@ faster_whisper:
   language:
   # Words and phrases to listen for, e.g. the names of your devices
   hotwords:
+  # Skip audio without speech; recommended with hotwords
+  vad_filter: no
 
 transformations:
 # Examples:
