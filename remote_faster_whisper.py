@@ -189,10 +189,8 @@ class FasterWhisperApi:
             task="translate" if self.translate else "transcribe",
         )
 
-        found_text = list()
-        for segment in segments:
-            found_text.append(segment.text)
-        text = " ".join(found_text).strip()
+        # Each segment's text already begins with a space where one is needed
+        text = "".join(segment.text for segment in segments).strip()
 
         text = self.apply_transformations(text)
 
