@@ -47,6 +47,10 @@ logger = logging.getLogger("remote_faster_whisper")
 # The sample rate Whisper models expect
 SAMPLE_RATE = 16000
 
+# The maximum upload size; 20MB is comfortably more than 1 minute of uncompressed
+# 48kHz 16-bit stereo audio (11.5MB)
+MAX_UPLOAD_SIZE = 20 * 1024 * 1024
+
 # Special transformations, in the order they are applied
 SPECIAL_TRANSFORMATIONS = {
     "lower": str.lower,
@@ -78,6 +82,7 @@ class FasterWhisperApi:
         Initialize the API and Faster Whisper configuration
         """
         self.app = Flask(__name__)
+        self.app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE
         self.blueprint = Blueprint("api", __name__, url_prefix=base_url)
 
         (
@@ -111,7 +116,7 @@ class FasterWhisperApi:
         def transcribe():
             try:
                 f = request.files["audio_file"]
-            except Exception:
+            except KeyError:
                 return {
                     "message": "Request data did not contain an 'audio_file' in its files"
                 }, 400
